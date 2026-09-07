@@ -123,8 +123,24 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── Ensure demo samples exist at cold-start (Streamlit Cloud ephemeral filesystem) ──
+import generate_samples as _gs
+
+@st.cache_resource(show_spinner=False)
+def _ensure_samples():
+    _samples_dir = os.path.join(os.path.dirname(__file__), "samples")
+    os.makedirs(_samples_dir, exist_ok=True)
+    synth_path = os.path.join(_samples_dir, "synthetic_cloned.wav")
+    auth_path  = os.path.join(_samples_dir, "authentic_speech.wav")
+    if not os.path.exists(synth_path):
+        _gs.generate_synthetic_sample(synth_path)
+    if not os.path.exists(auth_path):
+        _gs.generate_authentic_sample(auth_path)
+
+_ensure_samples()
+
 # Sidebar Controls
-st.sidebar.image("https://img.icons8.com/isometric-folders/100/security-shield.png", width=64)
+st.sidebar.markdown("## 🛡️ DeepFakeSentry")
 st.sidebar.title("Forensic Controls")
 
 input_mode = st.sidebar.radio(
@@ -142,23 +158,9 @@ if input_mode == "Upload Audio/Video":
         type=["wav", "mp3", "mp4", "m4a", "flac"]
     )
 elif input_mode == "Demo: Synthetic AI Voice":
-    synth_path = os.path.join(samples_dir, "synthetic_cloned.wav")
-    if os.path.exists(synth_path):
-        audio_file = synth_path
-    else:
-        st.sidebar.error("Synthetic demo file missing! Generating...")
-        import generate_samples
-        generate_samples.generate_synthetic_sample(synth_path)
-        audio_file = synth_path
+    audio_file = os.path.join(samples_dir, "synthetic_cloned.wav")
 else:
-    auth_path = os.path.join(samples_dir, "authentic_speech.wav")
-    if os.path.exists(auth_path):
-        audio_file = auth_path
-    else:
-        st.sidebar.error("Authentic demo file missing! Generating...")
-        import generate_samples
-        generate_samples.generate_authentic_sample(auth_path)
-        audio_file = auth_path
+    audio_file = os.path.join(samples_dir, "authentic_speech.wav")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Overlay Settings")
